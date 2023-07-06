@@ -8,21 +8,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 import settings
-from app.shared.bases.base_model import ModelMixin
-from settings import base_dir as app_base_dir
 
-
-# for route in APIPrefix.include:
-#     try:
-#         exec(f"from app.api.{route}.models import ModelMixin as Base")
-#     except ImportError as e:
-#         logger.error(f"Route {route} has no tables defined")
-#
-# for route in Games.include:
-#     try:
-#         exec(f"from app.games.{route}.models import ModelMixin as Base")
-#     except ImportError as e:
-#         logger.error(f"Route {route} has no tables defined")
 
 from app.shared.bases.base_model import ModelMixin as Base
 

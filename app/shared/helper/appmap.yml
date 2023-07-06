@@ -1,4 +1,0 @@
-language: python
-name: helper
-packages:
-- path: helper

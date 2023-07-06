@@ -1,26 +1,16 @@
 import logging
-
-import sentry_sdk
-from fastapi import FastAPI
-
-from starlette.responses import RedirectResponse
-
+from sqlalchemy.engine import create_engine
+from sqlalchemy.orm import sessionmaker
 from app.shared.bases.base_model import ModelMixin
-from app.webhook.views import router as webhook_router
-from fastapi_sqlalchemy import DBSessionMiddleware, db
-from settings import Config
-
-from app.shared.middleware.auth import JWTBearer
-from fastapi.middleware.cors import CORSMiddleware
+from app import base_dir
 from loguru import logger
 import sentry_sdk
 logger.configure(
     handlers=[
         {
-            "sink": "app.log",
+            "sink": f"{base_dir}/app.log",
             "level": logging.INFO,
             "format": "{time} {level} {message}",
-           #  "enqueue": True,
             "backtrace": True,
             "diagnose": True,
 
@@ -29,15 +19,6 @@ logger.configure(
     ]
 )
 
-# sentry_sdk.init(
-#     # ...
-#     integrations=[
-#         StarletteIntegration(transaction_style="url"),
-#         FastApiIntegration(transaction_style="url"),
-#
-#     ],
-# )
-app = FastAPI()
 
 sentry_sdk.init(
     traces_sample_rate=1.0,
@@ -53,50 +34,15 @@ sentry_sdk.init(
 
 
 )
-
-
-@app.get("/", include_in_schema=False)
-def index():
-    return RedirectResponse("/docs")
-
-
-app.add_middleware(
-    DBSessionMiddleware,
-    db_url=f"postgresql+psycopg2://{Config.postgres_connection}",
-    engine_args={"pool_size": 100000, "max_overflow": 10000},
+# create engione with postgres and psycopg2
+engine = create_engine(
+    "postgresql+psycopg2://postgres:postgres@localhost:5432/ouroboros"
 )
-
-origins = [
-    "http://localhost",
-    "http://localhost:80",
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "https://baohule-dashboard.vercel.app",
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-# app.add_middleware(AuthenticationMiddleware, backend=JWTBearer())
-
-logger.debug("Middleware registered")
-
-logger.debug("Database connection established")
-
-app.build_middleware_stack()
-app.include_router(webhook_router)
-
-with db():
-    ModelMixin.set_session(db.session)
+session = sessionmaker(bind=engine)
+# make a scoped session
+db = session()
 
 
-# socket = SocketManager(app)
+with db:
+    ModelMixin.set_session(db)
 
-#
-
-
-# redis = RedisServices().redis
